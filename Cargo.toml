@@ -45,6 +45,7 @@ anyhow = "1.0"
 chardetng = "0.1"
 glob = "0.3.1"
 indexmap = "2.0"
+symlink = { version = "0.1.0", default-features = false }
 
 [features]
 default = ["tls"]

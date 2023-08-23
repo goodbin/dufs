@@ -399,6 +399,15 @@ impl Server {
                         status_not_found(&mut res);
                     }
                 }
+                "LINK" => {
+                    if !allow_upload {
+                        status_forbid(&mut res);
+                    } else if is_miss {
+                        status_not_found(&mut res);
+                    } else {
+                        self.handle_symlink(path, is_dir, &req, &mut res).await?
+                    }
+                }
                 "UNLOCK" => {
                     // Fake unlock
                     if is_miss {
@@ -411,6 +420,32 @@ impl Server {
             },
         }
         Ok(res)
+    }
+
+    async fn handle_symlink(
+        &self,
+        path: &Path,
+        is_dir: bool,
+        req: &Request,
+        res: &mut Response,
+    ) -> Result<()> {
+        let dest = match self.extract_dest(req, res) {
+            Some(dest) => dest,
+            None => {
+                return Ok(());
+            }
+        };
+
+        ensure_path_parent(&path).await?;
+        ensure_path_parent(&dest).await?;
+
+        match is_dir {
+            true => symlink::symlink_dir(path, dest)?,
+            false => symlink::symlink_file(path, dest)?,
+        }
+
+        status_no_content(res);
+        Ok(())
     }
 
     async fn handle_upload(&self, path: &Path, mut req: Request, res: &mut Response) -> Result<()> {
